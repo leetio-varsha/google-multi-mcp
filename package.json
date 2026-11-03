@@ -1,0 +1,33 @@
+{
+  "name": "google-multi-mcp",
+  "version": "1.0.0",
+  "description": "Local MCP server fronting multiple Google accounts (Gmail, Drive, Calendar).",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "google-multi-mcp": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "auth": "node dist/auth.js",
+    "dev": "tsx src/server.ts",
+    "auth:dev": "tsx src/auth.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "dotenv": "^16.4.5",
+    "google-auth-library": "^9.15.0",
+    "googleapis": "^144.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
