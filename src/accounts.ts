@@ -30,7 +30,10 @@ export const HOME_DIR = process.env.GMM_HOME
   : BASE_DIR;
 
 export const CONFIG_PATH = path.join(BASE_DIR, "config.json");
-export const CONFIG_LOCAL_PATH = path.join(HOME_DIR, "config.local.json");
+/** `GMM_HOME/config.local.json` when present, else the checkout's own. */
+export const CONFIG_LOCAL_PATH = existsSync(path.join(HOME_DIR, "config.local.json"))
+  ? path.join(HOME_DIR, "config.local.json")
+  : path.join(BASE_DIR, "config.local.json");
 export const TOKENS_PATH = path.join(HOME_DIR, "tokens.enc");
 
 // Load .env once on import so every entry point (server, auth) sees it.

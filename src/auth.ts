@@ -101,7 +101,8 @@ async function authorizeAccount(account: string, store: TokenStore): Promise<voi
   const authUrl = client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent", // force a refresh_token even on re-auth
-    scope: getScopes(),
+    // openid + email give an id_token naming who signed in, whatever the other scopes are.
+    scope: [...new Set([...getScopes(), "openid", "email"])],
     login_hint: account,
   });
 
@@ -118,10 +119,14 @@ async function authorizeAccount(account: string, store: TokenStore): Promise<voi
 
   // Check who actually signed in before saving: picking another account in the
   // Google chooser must not store that mailbox's token under this key.
-  client.setCredentials(tokens);
-  const gmail = google.gmail({ version: "v1", auth: client });
-  const profile = await gmail.users.getProfile({ userId: "me" });
-  const signedIn = (profile.data.emailAddress ?? "").toLowerCase();
+  let signedIn = "";
+  try {
+    const ticket = await client.verifyIdToken({ idToken: tokens.id_token ?? "", audience: clientId });
+    signedIn = (ticket.getPayload()?.email ?? "").toLowerCase();
+  } catch (err) {
+    console.error(`  ! Could not check who signed in (${(err as Error).message}). Nothing saved.`);
+    return;
+  }
   if (signedIn !== account.toLowerCase()) {
     console.error(
       `  ! You signed in as ${signedIn || "an unknown account"}, not ${account}. ` +

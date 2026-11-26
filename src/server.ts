@@ -139,8 +139,11 @@ function summarizeMessage(msg: gmail_v1.Schema$Message): Record<string, unknown>
     id: msg.id,
     thread_id: msg.threadId,
     labels: msg.labelIds ?? [],
+    // When Gmail received it (ms since epoch); unlike `date`, not set by the sender.
+    internal_date: msg.internalDate ?? null,
     from: h["from"] ?? "",
     to: h["to"] ?? "",
+    cc: h["cc"] ?? "",
     subject: h["subject"] ?? "",
     date: h["date"] ?? "",
     snippet: msg.snippet ?? "",
@@ -197,7 +200,7 @@ server.tool(
           userId: "me",
           id,
           format: "metadata",
-          metadataHeaders: ["From", "To", "Subject", "Date"],
+          metadataHeaders: ["From", "To", "Cc", "Subject", "Date"],
         }),
       );
       messages.push(summarizeMessage(full.data));
