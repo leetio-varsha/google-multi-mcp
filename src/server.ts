@@ -138,6 +138,7 @@ function summarizeMessage(msg: gmail_v1.Schema$Message): Record<string, unknown>
   return {
     id: msg.id,
     thread_id: msg.threadId,
+    labels: msg.labelIds ?? [],
     from: h["from"] ?? "",
     to: h["to"] ?? "",
     subject: h["subject"] ?? "",
