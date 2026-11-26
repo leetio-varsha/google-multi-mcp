@@ -116,27 +116,22 @@ async function authorizeAccount(account: string, store: TokenStore): Promise<voi
     return;
   }
 
-  store.set(account, tokens);
-
-  // Verify the signed-in identity matches the requested account.
-  try {
-    client.setCredentials(tokens);
-    const gmail = google.gmail({ version: "v1", auth: client });
-    const profile = await gmail.users.getProfile({ userId: "me" });
-    const signedIn = profile.data.emailAddress ?? "";
-    if (signedIn && signedIn.toLowerCase() !== account.toLowerCase()) {
-      console.error(
-        `  ! WARNING: you signed in as ${signedIn}, not ${account}. ` +
-          "Token saved under the requested key anyway — re-run if wrong.",
-      );
-    } else {
-      console.log(`  ✓ Saved token for ${account}`);
-    }
-  } catch (err) {
-    console.log(
-      `  ✓ Saved token for ${account} (identity check skipped: ${(err as Error).message})`,
+  // Check who actually signed in before saving: picking another account in the
+  // Google chooser must not store that mailbox's token under this key.
+  client.setCredentials(tokens);
+  const gmail = google.gmail({ version: "v1", auth: client });
+  const profile = await gmail.users.getProfile({ userId: "me" });
+  const signedIn = (profile.data.emailAddress ?? "").toLowerCase();
+  if (signedIn !== account.toLowerCase()) {
+    console.error(
+      `  ! You signed in as ${signedIn || "an unknown account"}, not ${account}. ` +
+        "Nothing saved — re-run and pick the right account.",
     );
+    return;
   }
+
+  store.set(account, tokens);
+  console.log(`  ✓ Saved token for ${account}`);
 }
 
 /** Print authorization status for every registered account. */
