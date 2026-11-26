@@ -20,12 +20,24 @@ const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 /** Project root — module lives in `src/` (tsx) or `dist/` (built), both one level down. */
 export const BASE_DIR = path.resolve(moduleDir, "..");
 
+/**
+ * Where secrets and personal data live: `.env`, `tokens.enc` and
+ * `config.local.json`. Defaults to the project root; set `GMM_HOME` to keep
+ * them outside the checkout (e.g. a private 0700 directory).
+ */
+export const HOME_DIR = process.env.GMM_HOME
+  ? path.resolve(process.env.GMM_HOME)
+  : BASE_DIR;
+
 export const CONFIG_PATH = path.join(BASE_DIR, "config.json");
-export const CONFIG_LOCAL_PATH = path.join(BASE_DIR, "config.local.json");
-export const TOKENS_PATH = path.join(BASE_DIR, "tokens.enc");
+/** `GMM_HOME/config.local.json` when present, else the checkout's own. */
+export const CONFIG_LOCAL_PATH = existsSync(path.join(HOME_DIR, "config.local.json"))
+  ? path.join(HOME_DIR, "config.local.json")
+  : path.join(BASE_DIR, "config.local.json");
+export const TOKENS_PATH = path.join(HOME_DIR, "tokens.enc");
 
 // Load .env once on import so every entry point (server, auth) sees it.
-dotenv.config({ path: path.join(BASE_DIR, ".env") });
+dotenv.config({ path: path.join(HOME_DIR, ".env") });
 
 /** Raised when configuration or environment is missing/invalid. */
 export class ConfigError extends Error {

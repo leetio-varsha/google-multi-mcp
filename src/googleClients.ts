@@ -24,7 +24,10 @@ export class GoogleApiError extends Error {
   }
 }
 
-const store = new TokenStore();
+// Created on first use: a missing TOKEN_ENC_KEY must come back as a tool error, not kill the
+// server at startup (the client would only see the connection close).
+let cachedStore: TokenStore | undefined;
+const tokenStore = (): TokenStore => (cachedStore ??= new TokenStore());
 
 /**
  * Build an authenticated OAuth2 client for `account`, with auto-refresh +
@@ -33,7 +36,7 @@ const store = new TokenStore();
  * @throws AccountNotAuthorized if no token is stored for the account.
  */
 export function makeAuthClient(account: string): OAuth2Client {
-  const token = store.get(account);
+  const token = tokenStore().get(account);
   if (!token?.refresh_token) {
     throw new AccountNotAuthorized(account);
   }
@@ -46,8 +49,8 @@ export function makeAuthClient(account: string): OAuth2Client {
   // or may not include a new refresh_token — merge to avoid losing it.
   client.on("tokens", (fresh) => {
     try {
-      const existing = store.get(account) ?? {};
-      store.set(account, { ...existing, ...fresh });
+      const existing = tokenStore().get(account) ?? {};
+      tokenStore().set(account, { ...existing, ...fresh });
     } catch {
       // Persisting is best-effort; the in-memory client still works this run.
     }

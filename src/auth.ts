@@ -101,7 +101,8 @@ async function authorizeAccount(account: string, store: TokenStore): Promise<voi
   const authUrl = client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent", // force a refresh_token even on re-auth
-    scope: getScopes(),
+    // openid + email give an id_token naming who signed in, whatever the other scopes are.
+    scope: [...new Set([...getScopes(), "openid", "email"])],
     login_hint: account,
   });
 
@@ -116,27 +117,26 @@ async function authorizeAccount(account: string, store: TokenStore): Promise<voi
     return;
   }
 
-  store.set(account, tokens);
-
-  // Verify the signed-in identity matches the requested account.
+  // Check who actually signed in before saving: picking another account in the
+  // Google chooser must not store that mailbox's token under this key.
+  let signedIn = "";
   try {
-    client.setCredentials(tokens);
-    const gmail = google.gmail({ version: "v1", auth: client });
-    const profile = await gmail.users.getProfile({ userId: "me" });
-    const signedIn = profile.data.emailAddress ?? "";
-    if (signedIn && signedIn.toLowerCase() !== account.toLowerCase()) {
-      console.error(
-        `  ! WARNING: you signed in as ${signedIn}, not ${account}. ` +
-          "Token saved under the requested key anyway — re-run if wrong.",
-      );
-    } else {
-      console.log(`  ✓ Saved token for ${account}`);
-    }
+    const ticket = await client.verifyIdToken({ idToken: tokens.id_token ?? "", audience: clientId });
+    signedIn = (ticket.getPayload()?.email ?? "").toLowerCase();
   } catch (err) {
-    console.log(
-      `  ✓ Saved token for ${account} (identity check skipped: ${(err as Error).message})`,
-    );
+    console.error(`  ! Could not check who signed in (${(err as Error).message}). Nothing saved.`);
+    return;
   }
+  if (signedIn !== account.toLowerCase()) {
+    console.error(
+      `  ! You signed in as ${signedIn || "an unknown account"}, not ${account}. ` +
+        "Nothing saved — re-run and pick the right account.",
+    );
+    return;
+  }
+
+  store.set(account, tokens);
+  console.log(`  ✓ Saved token for ${account}`);
 }
 
 /** Print authorization status for every registered account. */

@@ -121,6 +121,15 @@ Edit `.env`:
   Paste the output as `TOKEN_ENC_KEY`. Keep it safe; if you lose it, delete
   `tokens.enc` and re-run `auth`.
 
+To keep secrets outside the checkout, put `.env` (and optionally
+`config.local.json`) in a private directory and set `GMM_HOME` to it when
+running `auth` and the server. `tokens.enc` is then written there too:
+
+```bash
+mkdir -m 700 ~/.config/google-multi-mcp
+GMM_HOME=~/.config/google-multi-mcp npm run auth
+```
+
 ### 6. Authorize the accounts
 
 ```bash
@@ -192,6 +201,7 @@ Restart the client. Then try: *"List my connected Google accounts"* or
 ## Security notes
 
 - `.env` and `tokens.enc` are gitignored — do not commit them.
+- Or keep them out of the repo entirely with `GMM_HOME` (see step 5).
 - `tokens.enc` is written with `0600` permissions.
 - Scopes are minimal for the feature set: Gmail is read + compose (drafts only,
   **no send**); Drive is readonly + file; Calendar is full (needed to create
